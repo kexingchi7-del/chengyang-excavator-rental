@@ -9,6 +9,27 @@ const text = html => html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;|&#160;/gi, ' 
 const compact = html => text(html).replace(/\s+/g, '');
 const today = now => new Date(now.getTime() + 8 * 3600000).toISOString().slice(0, 10);
 
+function tableGrid(table) {
+  const grid = [];
+  const rows = [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)];
+  rows.forEach((row, r) => {
+    if (!grid[r]) grid[r] = [];
+    let c = 0;
+    for (const cell of row[1].matchAll(/<t[dh]\b([^>]*)>([\s\S]*?)<\/t[dh]>/gi)) {
+      while (grid[r][c] !== undefined) c += 1;
+      const span = name => Number(cell[1].match(new RegExp(name + '\\s*=\\s*["\']?(\\d+)', 'i'))?.[1] || 1);
+      const width = span('colspan'), height = span('rowspan');
+      if (width > 20 || height > 100 || !width || !height) throw new Error('Invalid table spans');
+      for (let dr = 0; dr < height; dr += 1) {
+        if (!grid[r + dr]) grid[r + dr] = [];
+        for (let dc = 0; dc < width; dc += 1) grid[r + dr][c + dc] = compact(cell[2]);
+      }
+      c += width;
+    }
+  });
+  return grid;
+}
+
 function officialUrl(value) {
   const url = new URL(value, LIST_URL);
   if (url.hostname !== 'fgw.weihai.gov.cn' || !['http:', 'https:'].includes(url.protocol)
@@ -50,16 +71,21 @@ export function parseDieselNotice(html, sourceUrl, now = new Date()) {
   if (hour > 24) throw new Error('Invalid effective hour');
   const instant = new Date(`${day}T00:00:00+08:00`).getTime() + hour * 3600000;
   const effectiveDate = today(new Date(instant));
-  if (publishedDate > today(now) || instant > now.getTime()) throw new Error('Future notice');
+  if (publishedDate > today(now)) throw new Error('Future publication');
+  if (instant > now.getTime()) {
+    const error = new Error('Notice not yet effective'); error.code = 'NOT_YET_EFFECTIVE'; throw error;
+  }
   const prose = body.match(/(?<![\d－−+\-])0号柴油(?:最高零售价格)?(?:调整为|为|执行)?每升(\d+(?:\.\d+)?)元/);
   const tables = html.match(/<table\b[^>]*>[\s\S]*?<\/table>/gi) || [];
   const prices = tables.flatMap(table => {
     if (!/最高零售价格/.test(compact(table)) || !/元[／/]升/.test(compact(table)) || !/柴油/.test(compact(table))) return [];
-    return [...table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].flatMap(row => {
-      const cells = [...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(c => compact(c[1]));
-      const index = cells.indexOf('0号');
-      return index >= 0 ? [Number(cells[index + 1])] : [];
-    });
+    const grid = tableGrid(table);
+    const headerIndex = grid.findIndex(row => row.some(cell => /最高零售价格/.test(cell)));
+    if (headerIndex < 0) return [];
+    const column = grid[headerIndex].findIndex(cell => /最高零售价格/.test(cell));
+    const unitConfirmed = grid.slice(headerIndex, headerIndex + 3).some(row => /元[／/]升/.test(row[column] || ''));
+    if (!unitConfirmed) return [];
+    return grid.filter(row => row.includes('0号')).map(row => Number(row[column]));
   });
   const candidates = [...(prose ? [Number(prose[1])] : []), ...prices];
   if (!candidates.length || candidates.some(p => !Number.isFinite(p) || p < 3 || p > 15)
@@ -101,7 +127,9 @@ export async function checkDiesel(previous, { now = new Date(), fetchPage = fetc
       try {
         const notice = parseDieselNotice(await fetchPage(link.url), link.url, now);
         if (!accepted || notice.effectiveDate > accepted.effectiveDate) accepted = notice;
-      } catch (error) { errors = [...errors, `${link.url}: ${error.message}`]; }
+      } catch (error) {
+        if (error.code !== 'NOT_YET_EFFECTIVE') errors = [...errors, `${link.url}: ${error.message}`];
+      }
     }
     // Never silently certify an older fallback when a more recent notice is unreadable.
     if (errors.length) throw new Error(errors.join('; '));
@@ -119,7 +147,7 @@ export async function checkDiesel(previous, { now = new Date(), fetchPage = fetc
 export async function main() {
   // Missing/corrupt local data must not be overwritten with an invented baseline.
   const previous = JSON.parse(await readFile(DATA_URL, 'utf8'));
-  const result = await checkDiesel(previous);
+  const result = { ...await checkDiesel(previous), updateMode: process.env.GITHUB_ACTIONS === 'true' ? 'scheduled' : 'manual' };
   const temporary = new URL(`../data/diesel.json.${process.pid}.tmp`, import.meta.url);
   await writeFile(temporary, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
   await rename(temporary, DATA_URL);

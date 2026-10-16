@@ -6,7 +6,7 @@ const now = new Date('2026-10-17T00:00:00Z');
 const sample = `<meta name="ArticleTitle" content="2026年9月24日24时起，我省成品油价格按机制上调">
 <meta name="PubDate" content="2026-09-24 16:13">
 <p>自2026年9月24日24时起，国VI车用0号柴油调整为每升8.21元，上调0.33元。</p>
-<table><tr><td>最高零售价格</td><td>元/升</td></tr>
+<table><tr><td colspan="2" rowspan="2">品种</td><td>最高零售价格</td><td rowspan="2">最高批发价格</td></tr><tr><td>元/升</td></tr>
 <tr><td>国VI车用柴&nbsp;油</td><td>0号</td><td>8.21</td><td>9330</td></tr></table>`;
 test('official sample and midnight rollover; parser adds no check timestamp', async () => {
   const { parseDieselNotice } = await load();
@@ -87,4 +87,16 @@ test('network wrapper uses timeout, blocks redirects and surfaces HTTP errors', 
     await assert.rejects(fetchOfficialPage(url), /HTTP 503/);
     await assert.rejects(fetchOfficialPage('https://example.com'), /Non-official/);
   } finally { global.fetch = original; }
+});
+test('retail price bound to correct header column even with reordered wholesale column',async()=>{
+ const {parseDieselNotice:parse}=await load();
+ const html=sample.replace(/<p>[\s\S]*?<\/p>/,'自2026年9月24日24时起').replace(/<table>[\s\S]*<\/table>/,'<table><tr><td>品种</td><td>最高批发价格（元/公斤）</td><td>最高零售价格（元/升）</td></tr><tr><td>柴油0号</td><td>8.21</td><td>8.50</td></tr></table>');
+ assert.throws(()=>parse(html,url,now));
+ assert.equal(parse(html.replace('柴油0号','0号').replace('品种','柴油品种'),url,now).price,8.5);
+});
+test('pending effective notice does not invalidate currently effective price',async()=>{
+ const {checkDiesel}=await load();const pendingUrl='https://fgw.weihai.gov.cn/art/2026/10/17/art_53887_9999999.html';
+ const pending=sample.replaceAll('9月24日','10月17日').replace('2026-09-24','2026-10-17').replaceAll('8.21','8.5');
+ const result=await checkDiesel({}, {now,fetchPage:async u=>u.includes('/col/')?`<a href="${pendingUrl}">成品油</a><a href="${url}">成品油</a>`:u===pendingUrl?pending:sample});
+ assert.equal(result.lastCheckStatus,'ok');assert.equal(result.price,8.21);
 });

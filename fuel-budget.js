@@ -12,7 +12,7 @@ async function refreshDiesel(){
    officialPrice=d.price;if(!priceInput.dataset.edited)priceInput.value=d.price;
    const last=d.checkedAt?new Date(d.checkedAt).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'}):'尚未完成自动检查';
    const stale=!d.checkedAt||Date.now()-Date.parse(d.checkedAt)>48*3600000||d.lastCheckStatus!=='ok';
-   status.textContent=`山东0号柴油官方最高零售价 ${d.price}元/升；生效日期 ${d.effectiveDate}；最近检查 ${last}。${stale?'更新检查异常或超过48小时，请核对官方公告与加油站实际报价。':'自动检查正常；价格未调时生效日期不变。'}`;
+   status.textContent=`山东0号柴油官方最高零售价 ${d.price}元/升；生效日期 ${d.effectiveDate}；最近检查 ${last}。${d.updateMode==='scheduled'?'按已安装任务更新。':'当前为手动检查记录，定时更新尚未启用。'}${stale?'更新检查异常或超过48小时，请核对官方公告与加油站实际报价。':'最近检查通过；价格未调时生效日期不变。'}`;
    const source=document.getElementById('dieselSource');const u=new URL(d.sourceUrl);if(u.protocol!=='https:'||u.hostname!=='fgw.weihai.gov.cn')throw Error('来源地址无效');source.href=u.href;source.textContent='查看山东官方价格公告';
    recalculate();
  }catch(error){status.textContent='自动油价暂不可用，请手动填写实际采购单价；'+error.message;}
@@ -30,4 +30,11 @@ function recalculate(){
 budgetForm.addEventListener('input',recalculate);budgetForm.addEventListener('submit',e=>e.preventDefault());
 priceInput.addEventListener('input',()=>{priceInput.dataset.edited='true';recalculate();});
 document.getElementById('refreshDiesel').addEventListener('click',refreshDiesel);
+document.getElementById('applyBudget').addEventListener('click',()=>{
+ const values=Object.fromEntries(new FormData(budgetForm));
+ const mapping={machine:'机型',days:'预计使用天数',hours:'每天工时',count:'需求台数',cycle:'结算周期',buffer:'缓冲天数'};
+ const target=document.getElementById('quoteForm');
+ Object.entries(mapping).forEach(([key,name])=>{target.elements[name].value=values[key];});
+ target.dispatchEvent(new Event('input',{bubbles:true}));target.scrollIntoView({behavior:'smooth'});
+});
 refreshDiesel();recalculate();

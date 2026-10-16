@@ -1,0 +1,62 @@
+name: Refresh diesel price and publish site
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rental-pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Verify calculations and price parser
+        run: node --test tests/*.test.cjs
+      - name: Check official Shandong diesel price
+        id: diesel
+        continue-on-error: true
+        run: node scripts/update-diesel.mjs
+      - name: Preserve price and update status
+        run: |
+          if ! git diff --quiet -- data/diesel.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/diesel.json
+            git commit -m "chore: refresh official diesel price status"
+            git push
+          fi
+      - name: Package public pages only
+        run: |
+          mkdir -p _site/data
+          cp index.html thanks.html admin.html admin.css admin.js business.js form.js guide.html policy.js fuel-budget.js strategy.html strategy.js .nojekyll _site/
+          cp data/diesel.json _site/data/
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          path: _site
+      - name: Publish GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
+      - name: Surface stale price check
+        if: steps.diesel.outcome == 'failure'
+        run: |
+          echo "::warning::Official diesel check failed; retained prior price and published failure status."
