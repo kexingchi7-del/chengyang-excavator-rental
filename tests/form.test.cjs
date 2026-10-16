@@ -12,3 +12,4 @@ test('填写到邮件提交的集成流程，匿名端点与结构化金额正�
 test('非法台数不提交、不显示成功',()=>{const f=fixture({'需求台数':'-1'});f.handlers.submit({preventDefault(){}});assert.equal(f.submitted(),0);assert.match(f.hint.textContent,/台数/);});
 test('非法电话不提交',()=>{const f=fixture({'联系电话':'abc'});f.handlers.submit({preventDefault(){}});assert.equal(f.submitted(),0);assert.match(f.hint.textContent,/电话/);});
 test('询价使用客户调整后的结算周期与缓冲',()=>{const f=fixture({'结算周期':'3','缓冲天数':'1'});f.handlers.submit({preventDefault(){}});assert.match(f.hidden.find(x=>x.name==='首期预付建议').value,/25600元.*3天结算\+1天缓冲/);});
+test('公司询价有明确归属，不混淆客户公司字段',()=>{const f=fixture();f.handlers.submit({preventDefault(){}});assert.equal(f.hidden.find(x=>x.name==='询价服务公司').value,'青岛佳和盛达工程劳务有限公司');assert.equal(f.hidden.find(x=>x.name==='_subject').value,'青岛佳和盛达工程劳务有限公司｜新客户询价');});
