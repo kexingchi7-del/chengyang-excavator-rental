@@ -42,7 +42,7 @@ GitHub Pages 使用 main 分支根目录发布。修改 index.html 并推送后�
 
 - 首页预算区：山东0号柴油官方最高零售参考价（元/升）、生效日期、最近检查时间、官方来源及手动输入采购价。自行输入实测升/台时计算客户燃油预算，不把客户提供的柴油计入出租方成本或收入。
 - `scripts/update-diesel.mjs`：零依赖官方公告抓取。运行 `node scripts/update-diesel.mjs`；无效、未来、单位不符或抓取失败保留已有价格并标记更新失败。
-- `automation/refresh-site.yml`：准备好的每6小时检查与Pages发布工作流模板，尚未安装到 `.github/workflows/refresh-site.yml`（当前GitHub授权不能创建工作流）。页面明确标记手动检查。安装方法见 `automation/DIESEL_SETUP.md`。调价不发生时价格不变，任务可能延迟；超过48小时未成功检查提示核对。
+- `.github/workflows/refresh-site.yml`：已安装的每6小时官方油价检查与Pages发布任务，也可在Actions中手动运行。`automation/refresh-site.yml`保留相同模板供迁移。维护方法见 `automation/DIESEL_SETUP.md`。调价不发生时价格不变，任务可能延迟；超过48小时未成功检查提示核对。
 - `strategy.html`：经营者成本测算。综合成本和其他项目成本为空时不计算结余。未知成交率、违约风险、司机工资/维修/折旧等不能被AI自动补齐，不宣称得到盈利最优比例。
 - 页面“刷新油价记录”读取最近已发布JSON；不是向官方发起即时抓取。实际加油站报价可能低于官方最高限价，采购时按实际交易价。
 - 预付款参考例：柳工972、20天、8小时/天，机械费128000元，默认首期57600元（45%）；60天同样覆盖9天为15%。运输费等另行确认，不硬套三万元。
