@@ -26,7 +26,10 @@ form.addEventListener('submit', (event) => {
   } catch(error) { document.getElementById('quoteHint').textContent=error.message; return; }
   const data = Object.freeze({_subject:'城阳挖掘机租赁｜新客户询价', _template:'table', _next:'https://kexingchi7-del.github.io/chengyang-excavator-rental/thanks.html', '预计总台时':String(result.hours), '预计机械费':result.known ? result.amount+'元' : '待确认', '估算依据':'小时价 × 天数 × 每天工时 × 台数；客户自报，待核实，不含其他费用', '提交时间':new Date().toISOString()});
   form.querySelectorAll('[data-generated]').forEach(el=>el.remove());
-  const summary={...data,'设备名称':Rental.machines[form.elements['机型'].value]?.name||'待确认','需求金额区间':result.scale,'数量提示':result.capacityNote,'评估边界':'客户自报需求，不代表实际订单或支付能力'};
+  const values=new FormData(form);
+  const rate=Rental.machines[values.get('机型')]?.rate;
+  const proposal=rate?RentalPolicy.advance({rate,days:values.get('预计使用天数'),hours:values.get('每天工时'),count:values.get('需求台数'),cycle:7,buffer:2}):null;
+  const summary={...data,'设备名称':Rental.machines[form.elements['机型'].value]?.name||'待确认','需求金额区间':result.scale,'数量提示':result.capacityNote,'柴油承担':'客户提供柴油；小时租金不含柴油费','首期预付建议':proposal?`${proposal.advance}元（${proposal.percent}%，按7天结算+2天缓冲测算；合同确认后生效）`:'机型待确认','评估边界':'客户自报需求，不代表实际订单或支付能力'};
   form.append(...Object.entries(summary).map(([name,value]) => {
     const input = document.createElement('input');
     input.type='hidden'; input.name=name; input.value=value; input.dataset.generated='true';

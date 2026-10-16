@@ -1,10 +1,10 @@
-const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),Rental=require('../business.js');
+const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),Rental=require('../business.js'),RentalPolicy=require('../policy.js');
 function fixture(overrides={}){
  const fields={'机型':'972','预计使用天数':'20','每天工时':'8','需求台数':'1','联系电话':'13800000000',...overrides};
  const handlers={},hidden=[],hint={},estimate={},button={};let submitted=0;
  const form={elements:Object.fromEntries(Object.entries(fields).map(([key,value])=>[key,{value}])),reportValidity:()=>true,addEventListener:(name,fn)=>{handlers[name]=fn;},querySelectorAll:()=>[],append:(...els)=>hidden.push(...els),querySelector:()=>button};
  const document={getElementById:id=>id==='quoteForm'?form:id==='estimate'?estimate:hint,createElement:()=>({dataset:{}})};
- const context=vm.createContext({Rental,document,FormData:function(){this.get=k=>fields[k];},window:{addEventListener:()=>{}},HTMLFormElement:{prototype:{submit:function(){submitted++;}}},Date});
+ const context=vm.createContext({Rental,RentalPolicy,document,FormData:function(){this.get=k=>fields[k];},window:{addEventListener:()=>{}},HTMLFormElement:{prototype:{submit:function(){submitted++;}}},Date});
  vm.runInContext(fs.readFileSync('form.js','utf8'),context);
  return {form,hidden,hint,estimate,button,handlers,submitted:()=>submitted};
 }
