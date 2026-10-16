@@ -1,0 +1,10 @@
+.DS_Store
+node_modules/
+coverage/
+*.log
+租赁台账-*.json
+损坏原始数据-*.json
+.env
+.env.*
+credentials*.json
+token*.json

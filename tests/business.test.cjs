@@ -1,0 +1,7 @@
+const test=require('node:test');const assert=require('node:assert/strict');const R=require('../business.js');
+test('三台设备按台时估价',()=>{for(const [machine,rate] of [['972',800],['965',750],['6500',550]])assert.equal(R.quote({machine,days:20,hours:8,count:1}).amount,rate*160);});
+test('未知机型不编造报价，多台提醒供给确认',()=>{assert.equal(R.quote({machine:'unknown',days:1,hours:8,count:1}).amount,null);assert.match(R.quote({machine:'972',days:1,hours:8,count:2}).capacityNote,/超量/);});
+test('拒绝缺失、负值、非整数天数、无限值和过长工时',()=>{for(const override of [{days:''},{days:-1},{days:1.1},{count:Infinity},{hours:25},{count:1.5}])assert.throws(()=>R.quote({machine:'972',days:1,hours:8,count:1,...override}));});
+test('余额由实际到账减确认应收，不把估算当收入',()=>{const b=R.balance({rate:800,actualHours:16,paid:30000,extras:1000,dailyHours:8});assert.equal(b.used,13800);assert.equal(b.remaining,16200);assert.equal(b.status,'余额充足');});
+test('欠款与补款阈值',()=>{const o={rate:800,actualHours:40,paid:30000,extras:0,dailyHours:8};assert.equal(R.balance(o).remaining,-2000);assert.equal(R.balance(o).status,'已欠款');assert.equal(R.balance(o).topup,46800);assert.equal(R.balance({...o,actualHours:24}).status,'建议补款');});
+test('导入仅保留允许字段并校验，不接受缺失到账',()=>{const o={id:'A',customer:'客户',machine:'972',rate:800,actualHours:0,paid:0,extras:0,dailyHours:8};assert.equal(R.validateOrder({...o,malicious:'x'}).malicious,undefined);assert.throws(()=>R.validateOrder({...o,paid:''}));assert.throws(()=>R.validateOrder({...o,machine:'bad'}));});
