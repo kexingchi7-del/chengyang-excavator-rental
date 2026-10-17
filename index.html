@@ -33,10 +33,14 @@
 <label for="detail">其他说明</label><textarea id="detail" name="其他说明" maxlength="2000"></textarea>
 <p id="estimate" class="notice">填写后自动估算机械费。每种机型各一台，超出现有数量需另行确认。</p>
 <label><input type="checkbox" required style="width:auto"> 同意通过邮件表单服务将以上资料发送给青岛佳和盛达工程劳务有限公司，用于询价和联系。</label>
-<button class="btn primary" type="submit">提交用机需求</button><p id="quoteHint" class="notice" role="status">填写后提交，完成安全验证即可发送给出租方。</p><p class="notice">估算不含运输等其他费用；预付款、费用与履约条件以正式合同为准。</p></form></div></section>
-</main><footer class="wrap footer"><span>© 2026 青岛佳和盛达工程劳务有限公司</span><span>青岛市城阳区 · <a href="guide.html">运营指南</a> · <a href="admin.html">经营台账</a></span></footer><div class="toast" id="toast">询价单已生成，请复制后发送给出租方。</div>
+<section aria-labelledby="quoteTerms"><h3 id="quoteTerms">报价条款与费用边界</h3><p class="notice">柴油：客户提供，小时租金不含柴油费。<br>司机：待双方确认<br>运输：待双方确认<br>最低工时：待双方确认<br>停工待机：待双方确认<br>税费：待双方确认</p><p class="notice">结算周期和缓冲天数可编辑，仅为协商建议，不代表公司已接受或承诺。最终按双方正式合同执行。</p></section>
+<input type="text" name="_honey" hidden tabindex="-1" aria-hidden="true" autocomplete="off">
+<section id="enquiryPreview" hidden><h3>询价摘要（尚未发送）</h3><label for="enquirySummary">可手动选择复制；包含联系方式，请妥善保存</label><textarea id="enquirySummary" readonly rows="16"></textarea><button id="copyEnquiry" class="btn secondary" type="button">复制询价摘要</button><button id="downloadEnquiry" class="btn secondary" type="button">下载询价摘要</button></section>
+<button class="btn primary" type="submit">生成询价摘要</button><p id="quoteHint" class="notice" role="status">先生成摘要，再继续安全验证并提交；邮件送达需另行确认。</p><p class="notice">估算不含运输等其他费用；预付款、费用与履约条件以正式合同为准。</p></form></div></section>
+</main><footer class="wrap footer"><span>© 2026 青岛佳和盛达工程劳务有限公司</span><span>青岛市城阳区 · <a href="guide.html">运营指南</a> · <a href="https://jiahe-private-operations.pt6sbyfhd2.chatgpt.site" target="_blank" rel="noopener">经营后台（登录）</a></span></footer><div class="toast" id="toast">询价单已生成，请复制后发送给出租方。</div>
 <script src="business.js"></script>
 <script src="policy.js"></script>
+<script src="enquiry.js"></script>
 <script src="form.js"></script>
 <script src="fuel-budget.js"></script>
 </body></html>

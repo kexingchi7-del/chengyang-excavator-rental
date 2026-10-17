@@ -1,1 +1,6 @@
-<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>询价已提交｜佳和盛达</title><body style="font-family:sans-serif;max-width:600px;margin:15vh auto;padding:24px"><p>青岛佳和盛达工程劳务有限公司</p><h1>询价已提交</h1><p>我们将根据您留下的联系方式与您沟通。提交不代表订单成立。</p><a href="./">返回公司首页</a></body></html>
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>询价流程返回｜佳和盛达</title><body style="font-family:sans-serif;max-width:600px;margin:15vh auto;padding:24px"><p>青岛佳和盛达工程劳务有限公司</p><h1>询价流程返回</h1><p>此页面无法核实邮件是否送达或公司是否收到询价。请保留询价摘要，后续沟通时核对编号。询价不代表订单成立。</p><p id="reference"></p><a href="./">返回公司首页</a><script>
+try {
+ const ref=sessionStorage.getItem('rentalEnquiryRef');
+ if(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ref||'')) document.getElementById('reference').textContent='本次会话询价编号：'+ref;
+} catch(error) { document.getElementById('reference').textContent='本地询价编号不可用，请查看已保存的摘要。'; }
+</script></body></html>

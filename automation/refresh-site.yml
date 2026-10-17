@@ -27,6 +27,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Sync latest public source
+        run: |
+          git fetch origin main
+          git merge --ff-only origin/main
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
@@ -43,12 +50,19 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add data/diesel.json
             git commit -m "chore: refresh official diesel price status"
+            git pull --rebase origin main
+            node --test tests/*.test.cjs
             git push
           fi
+      - name: Sync and verify publish source
+        run: |
+          git fetch origin main
+          git merge --ff-only origin/main
+          node --test tests/*.test.cjs
       - name: Package public pages only
         run: |
           mkdir -p _site/data
-          cp index.html thanks.html admin.html admin.css admin.js business.js form.js guide.html policy.js fuel-budget.js strategy.html strategy.js .nojekyll _site/
+          cp index.html thanks.html admin.html admin.css admin.js business.js form.js enquiry.js guide.html policy.js fuel-budget.js strategy.html strategy.js .nojekyll _site/
           cp data/diesel.json _site/data/
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
         with:
@@ -56,7 +70,10 @@ jobs:
       - name: Publish GitHub Pages
         id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e
+      - name: Check deployed public site
+        run: node scripts/check-public-site.mjs
       - name: Surface stale price check
-        if: steps.diesel.outcome == 'failure'
+        if: ${{ !cancelled() && steps.deployment.outcome == 'success' && steps.diesel.outcome == 'failure' }}
         run: |
           echo "::warning::Official diesel check failed; retained prior price and published failure status."
+          exit 1
